@@ -1,0 +1,88 @@
+Steps:
+#copy client installable and modified response file client_install.rsp to remote server /tmp  directory
+#Install packages as root user
+yum -y install binutils
+yum -y install compat-libstdc++-33
+yum -y install elfutils-libelf
+yum -y install elfutils-libelf-devel
+yum -y install gcc
+yum -y install gcc-c++
+yum -y install glibc
+yum -y install glibc-common
+yum -y install glibc-devel
+yum -y install glibc-headers
+yum -y install ksh
+yum -y install libaio
+yum -y install libaio-devel
+yum -y install libgcc
+yum -y install libstdc++
+yum -y install libstdc++-devel
+yum -y install make
+yum -y install sysstat
+yum -y install unixODBC
+yum -y install unixODBC-devel
+yum -y install telnet
+yum -y install expat
+
+
+#Creating Required Operating System Groups and Users
+groupadd -g 200 oinstall
+groupadd -g 201 dba
+groupadd -g 202 oper
+useradd -u 440 -g oinstall -G dba,oper oracle
+passwd oracle
+#change password to Oracle123
+
+#create swap
+cd /opt
+touch swap
+dd if=/dev/zero of=/opt/swap bs=1M count=3072
+chown root:root /opt/swap
+chmod 600 /opt/swap
+mkswap /opt/swap
+swapon /opt/swap
+swapon -a
+#Add/Make sure the following are in your /etc/fstab
+cat >>/etc/fstab <<EOL
+/opt/swap swap swap defaults 0 0
+EOL
+
+cd /tmp/
+unzip -qo p10404530_112030_Linux-x86-64_4of7.zip
+cd /tmp/client/response
+mv client_install.rsp client_install_bkp.rsp
+mv /tmp/client_install.rsp /tmp/client/response
+
+cd /tmp/
+chown -R oracle:oinstall client/
+chmod -R 777 /tmp/client
+
+#Creating Required Directories
+mkdir -p /opt/oracle/product/11.2.0/client_1
+mkdir -p /opt/oracle/oraInventory
+cd /opt/
+chown -R oracle:oinstall oracle
+chmod -R 775 /opt/oracle
+
+Login as oracle user and run below commands
+sudo su - oracle
+/tmp/client/runInstaller -silent -responseFile /tmp/client/response/client_install.rsp
+
+#once prompted, run below command as root user
+/opt/oracle/oraInventory/orainstRoot.sh
+
+
+
+
+Post Installation:
+Once client is installed, update .bash_profile of user with below details:
+ORACLE_HOME=/opt/oracle/product/11.2.0/client_1
+export ORACLE_HOME
+PATH=$PATH:/opt/oracle/product/11.2.0/client_1/bin
+export PATH
+TNS_ADMIN=/opt/oracle/product/11.2.0/client_1/network/admin
+export TNS_ADMIN
+
+
+
+#add tnsnames.ora file under /opt/oracle/product/11.2.0/client_1/network/admin  path and add TNS entries as below:
